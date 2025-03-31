@@ -18,7 +18,8 @@ def main():
             # delete contents of error file by writing empty string
             _ = write_err(err_file_path, "")
         else:
-            # if the new_alarm function says the alarm message has changed or snooze time has elapsed
+            # if the new_alarm function says the error list has changed or snooze time has elapsed
+            # then call the webhook
             if new_alarm(params['snooze_time'], err_file_path, err_list):
                 call_webhook(params['webhook_url'], "services not running: " + err_list)
 
