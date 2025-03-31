@@ -12,10 +12,31 @@ def main():
             status = get_service_status(element)
             print (f"\033[32m{element} is running.\033[0m " if status else f"\033[31m{element} is not running.\033[0m ")
             if not status:
-                err_list += element + " "
-    
-        if err_list != "" and new_alarm(params['snooze_time'], err_file_path):
-            call_webhook(params['webhook_url'], "services not running: " + err_list)
+                err_list += element + " " # err_list is a list of all services in error
+
+        if err_list == "": # all services are running, so
+            # delete contents of error file by writing empty string
+            _ = write_err(err_file_path, "")
+        else:
+            # if the new_alarm function says the alarm message has changed or snooze time has elapsed
+            if new_alarm(params['snooze_time'], err_file_path, err_list):
+                call_webhook(params['webhook_url'], "services not running: " + err_list)
+
+def write_err(err_file_path, err):
+    # reads content of error file and compares the error parameter to the contents of the file
+    # if the error and file contents are the same, returns False
+    # if the error and file contents differ, writes the new error to the file and returns True
+    with open(err_file_path, 'r+') as file:
+        old_err = file.read()
+        if old_err != err:
+            file.seek(0)
+            file.write(err) # write new error message
+            file.truncate()
+            change = True 
+        else:
+            change = False
+        file.close()
+    return change
 
 def get_config(config_file):
     # return paramaters from configuration file
@@ -54,7 +75,7 @@ def call_webhook(webhook_url, output_message):
         except requests.exceptions.HTTPError as err:
             print("Error in trying to use Discord Webhook", err)
 
-def new_alarm (snooze_time, file_path):
+def new_alarm (snooze_time, file_path, err_list):
     # checks the file used to track when the last alarm occured, and
     # returns True if it's recent, False if not
     #
@@ -69,7 +90,9 @@ def new_alarm (snooze_time, file_path):
         with open(file_path, 'a'):
             os.utime(file_path, None)
     
-    return create_alarm
+    # return true if create_alarm indicates enough time has elapsed
+    # OR if write_err indicates that the error list has changed in the file
+    return create_alarm or write_err(file_path, err_list)
 
 if __name__ == "__main__":
     main()
