@@ -21,7 +21,7 @@ def main():
             # if the new_alarm function says the error list has changed or snooze time has elapsed
             # then call the webhook
             if new_alarm(params['snooze_time'], err_file_path, err_list):
-                call_webhook(params['webhook_url'], "services not running: " + err_list)
+                call_webhook(params['webhook_url'], "services not running on " + os.uname()[1] + ": " + err_list)
 
 def write_err(err_file_path, err):
     # reads content of error file and compares the error parameter to the contents of the file
