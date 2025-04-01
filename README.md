@@ -11,15 +11,23 @@ Uses a snooze time parameter in the configuration file to prevent spamming Disco
 
 ### Dependencies
 
-Requires crontab set up to run every 5 minutes during desired times. 
-e.g. to set to run between 7 a.m. and 9:55 p.m. use:
-*/5 7-21 * * * /path/to/python /path/to/check_service.py
+Requires a blank file that ends in ".err" in the same directory as the ".py" file
+e.g. "check_service.py" needs "check_service.err"
+Can copy a blank .err from github or use command:
+touch check_service.err
+
+File MUST be readable and writeable for use with crontab or other users, so be sure and chmod:
+sudo chmod ugo+rw check_service.err
 
 Set the following parameters in grandfather.ini: 
    service_name
    snooze_time
    webhook_url (optional, set to "" to disable Discord webhook calls on errors)
 (if program is renamed, need to rename the .ini file. E.g. if renamed "foo.py" it looks for "foo.ini")
+
+Optional: set up crontab ("crontab -e") to run every 5 minutes during desired times. 
+e.g. to set to run between 7 a.m. and 9:55 p.m. use:
+*/5 7-21 * * * /path/to/python /path/to/check_service.py
 
 ### Executing program
 
