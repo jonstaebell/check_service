@@ -14,6 +14,13 @@ def main():
             if not status:
                 err_list += element + " " # err_list is a list of all services in error
 
+        # Check docker containers
+        for container in params['docker_name']:
+            status = get_docker_status(container)
+            print(f"\033[32mDocker {container} is running.\033[0m" if status else f"\033[31mDocker {container} is not running.\033[0m")
+            if not status:
+                err_list += f"Docker:{container} "
+
         if err_list == "": # all services are running, so
             # delete contents of error file by writing empty string
             _ = write_err(err_file_path, "")
@@ -47,6 +54,7 @@ def get_config(config_file):
         Config = configparser.ConfigParser()
         Config.read(config_file)
         param_dict["service_name"] = Config.get('required', 'service_name').split()
+        param_dict["docker_name"] = Config.get('required', 'docker_name').split()
         param_dict["webhook_url"] = Config.get('required', 'webhook_url')
         param_dict["snooze_time"] = int(Config.get('required', 'snooze_time'))
     except:
@@ -62,6 +70,20 @@ def get_service_status(service_name):
         output = subprocess.check_output(["systemctl","is-active", service_name], stderr=subprocess.STDOUT)
         return output.decode().strip() == "active"
    except subprocess.CalledProcessError:
+        return False
+   
+def get_docker_status(container_name):
+    """
+    Checks if a Docker container is running.
+    Returns True if running, False otherwise.
+    """
+    try:
+        output = subprocess.check_output(
+            ["docker", "inspect", "-f", "{{.State.Running}}", container_name],
+            stderr=subprocess.STDOUT
+        )
+        return output.decode().strip().lower() == "true"
+    except subprocess.CalledProcessError:
         return False
 
 def call_webhook(webhook_url, output_message): 
