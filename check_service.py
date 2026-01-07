@@ -62,16 +62,37 @@ def get_config(config_file):
         return {} # return empty list on exceptions
     return param_dict
 
+import subprocess
+import os
+
 def get_service_status(service_name):
-   # Gets the status of a Linux service using systemctl
-   # returns True if the service is running and active, false if not
-   #
-   try:
-        output = subprocess.check_output(["systemctl","is-active", service_name], stderr=subprocess.STDOUT)
-        return output.decode().strip() == "active"
-   except subprocess.CalledProcessError:
-        return False
-   
+    # Get the current User ID (required for cron to find the user bus)
+    uid = os.getuid()
+    
+    # Define system check and user check
+    # For the user check, we explicitly set the runtime directory
+    checks = [
+        {"cmd": ["systemctl", "is-active", service_name], "env": None},
+        {
+            "cmd": ["systemctl", "--user", "is-active", service_name],
+            "env": {**os.environ, "XDG_RUNTIME_DIR": f"/run/user/{uid}"}
+        }
+    ]
+
+    for check in checks:
+        try:
+            output = subprocess.check_output(
+                check["cmd"], 
+                stderr=subprocess.STDOUT, 
+                env=check["env"]
+            )
+            if output.decode().strip() == "active":
+                return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+            
+    return False
+
 def get_docker_status(container_name):
     """
     Checks if a Docker container is running.
